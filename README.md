@@ -8,9 +8,9 @@
 
 ### macOS
 ```bash
-chmod +x Test-DockerDesktop.sh Uninstall-DockerDesktop.sh
-./Test-DockerDesktop.sh
-./Uninstall-DockerDesktop.sh [--keep-data] [--force]
+chmod +x test-docker-desktop.sh uninstall-docker-desktop.sh
+./test-docker-desktop.sh
+./uninstall-docker-desktop.sh [--keep-data] [--force]
 ```
 
 The uninstallers remove Docker Desktop application files, startup entries, and
