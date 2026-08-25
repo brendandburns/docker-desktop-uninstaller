@@ -1,9 +1,11 @@
 # Usage
 
+### Windows
 ```pwsh
 $ .\Uninstall-Docker-Desktop.ps1
 ```
 
+### MacOS X
 ```sh
 $ ./uninstall-docker-desktop.sh
 ```
