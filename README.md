@@ -2,13 +2,17 @@
 
 ### Windows
 ```pwsh
-$ .\Uninstall-Docker-Desktop.ps1
+.\Test-DockerDesktop.ps1
+.\Uninstall-DockerDesktop.ps1 [-KeepData] [-Force]
 ```
 
-### MacOS X
-```sh
-$ ./uninstall-docker-desktop.sh
+### macOS
+```bash
+chmod +x Test-DockerDesktop.sh Uninstall-DockerDesktop.sh
+./Test-DockerDesktop.sh
+./Uninstall-DockerDesktop.sh [--keep-data] [--force]
 ```
 
-## Known issues
-MacOS support is a work in progress.
+The uninstallers remove Docker Desktop application files, startup entries, and
+system registration. Use `-KeepData` or `--keep-data` to preserve Docker data
+and configuration, and `-Force` or `--force` to skip interactive prompts.
