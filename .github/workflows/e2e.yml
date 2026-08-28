@@ -1,0 +1,45 @@
+name: E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_windows:
+        description: Run on a self-hosted Windows 10/11 test machine
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-desktop-e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    name: macOS install and uninstall
+    runs-on: macos-15-intel
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run E2E test
+        run: bash e2e/test-macos.sh
+
+  windows:
+    name: Windows install and uninstall
+    if: github.event_name == 'workflow_dispatch' && inputs.run_windows
+    runs-on:
+      - self-hosted
+      - Windows
+      - X64
+      - docker-desktop-e2e
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run E2E test
+        shell: pwsh
+        run: .\e2e\Test-DockerDesktopE2E.ps1

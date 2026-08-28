@@ -33,8 +33,8 @@ Write-Host ""
 
 # Define installation paths
 $globalPath = "C:\Program Files\Docker\Docker"
-$localPath = "$env:LOCALAPPDATA\Docker"
-$dockerDataPath = "$env:LOCALAPPDATA\Docker\wsl"
+$localPath = "$env:LOCALAPPDATA\Programs\DockerDesktop"
+$dockerDataPath = "$env:LOCALAPPDATA\Docker"
 $dockerConfigPath = "$env:APPDATA\Docker"
 
 # Function to check if path exists
