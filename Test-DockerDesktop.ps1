@@ -21,16 +21,20 @@ function Test-DockerDesktopInstalled {
         }
     }
 
-    # Default installation path
-    $exePath = Join-Path $Env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+    $exePaths = @(
+        (Join-Path $Env:ProgramFiles "Docker\Docker\Docker Desktop.exe"),
+        (Join-Path $Env:LOCALAPPDATA "Programs\DockerDesktop\Docker Desktop.exe")
+    )
 
-    if (Test-Path $exePath) {
-        $version = (Get-Item $exePath).VersionInfo.ProductVersion
+    foreach ($exePath in $exePaths) {
+        if (Test-Path $exePath) {
+            $version = (Get-Item $exePath).VersionInfo.ProductVersion
 
-        return [PSCustomObject]@{
-            Installed = $true
-            Version   = $version
-            Source    = "Executable"
+            return [PSCustomObject]@{
+                Installed = $true
+                Version   = $version
+                Source    = "Executable"
+            }
         }
     }
 

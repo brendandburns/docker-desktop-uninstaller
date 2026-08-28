@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  powershell:
+    name: PowerShell
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Parse scripts
+        shell: pwsh
+        run: |
+          $parseErrors = foreach ($script in Get-ChildItem -Path . -Filter '*.ps1') {
+              $tokens = $null
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $script.FullName,
+                  [ref]$tokens,
+                  [ref]$errors
+              ) | Out-Null
+              $errors
+          }
+
+          if ($parseErrors) {
+              $parseErrors | Format-List | Out-String | Write-Error
+              exit 1
+          }
+
+      - name: Analyze scripts
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $findings = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          if ($findings) {
+              $findings | Format-Table -AutoSize | Out-String | Write-Error
+              exit 1
+          }
+
+      - name: Smoke test detector
+        shell: pwsh
+        run: |
+          & .\Test-DockerDesktop.ps1
+          if ($LASTEXITCODE -and $LASTEXITCODE -gt 1) {
+              exit $LASTEXITCODE
+          }
+          exit 0
+
+  bash:
+    name: Bash
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: brew install shellcheck
+
+      - name: Check syntax and style
+        run: |
+          bash -n test-docker-desktop.sh uninstall-docker-desktop.sh e2e/test-macos.sh
+          shellcheck --severity=error test-docker-desktop.sh uninstall-docker-desktop.sh e2e/test-macos.sh
+
+      - name: Smoke test detector
+        run: |
+          set +e
+          output=$(bash test-docker-desktop.sh 2>&1)
+          status=$?
+          set -e
+
+          printf '%s\n' "$output"
+          if (( status > 1 )); then
+            exit "$status"
+          fi
+
+      - name: Smoke test uninstaller help
+        run: bash uninstall-docker-desktop.sh --help
+
+  package:
+    name: Package
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - powershell
+      - bash
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build release archives
+        run: |
+          mkdir -p dist/package
+          cp README.md LICENSE *.ps1 *.sh dist/package/
+          cp -R e2e dist/package/
+          tar -C dist/package -czf dist/docker-desktop-uninstaller-${GITHUB_REF_NAME}.tar.gz .
+          (cd dist/package && zip -q ../docker-desktop-uninstaller-${GITHUB_REF_NAME}.zip ./*)
+          (cd dist && sha256sum *.tar.gz *.zip > SHA256SUMS)
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-desktop-uninstaller-${{ github.ref_name }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/*.tar.gz \
+            dist/*.zip \
+            dist/SHA256SUMS \
+            --generate-notes \
+            --verify-tag
