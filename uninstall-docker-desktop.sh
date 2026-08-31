@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -u
 
 KEEP_DATA=false
 FORCE=false
